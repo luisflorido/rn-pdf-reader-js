@@ -82,6 +82,10 @@ function viewerHtml(
     <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1.0, maximum-scale=${
       withPinchZoom ? `${maximumPinchZoomScale}.0` : '1.0'
     }, user-scalable=${withPinchZoom ? 'yes' : 'no'}" />
+    <script src="pdf.min.js"></script>
+    <script src="pdf_viewer.min.js"></script>
+    <script src="react.production.min.js"></script>
+    <script src="react-dom.production.min.js"></script>
     <script>
       pdfjsLib.GlobalWorkerOptions.workerSrc =
         'pdf.worker.min.js'
