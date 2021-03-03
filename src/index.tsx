@@ -110,18 +110,29 @@ function viewerHtml(
 `
 }
 
-const scripts = [
-  'pdfJs',
-  'pdfViewer',
-  'pdfWorker',
-  'reactDom',
-  'react',
-  'bundle',
-]
-
 // PATHS
 const htmlPath = `${cacheDirectory}index.html`
 const pdfPath = `${cacheDirectory}file.pdf`
+
+function writeWebViewComponentFile(container: any, fileName: any,  callback: any) {
+  writeAsStringAsync(`${cacheDirectory}${fileName}`, container.getBundle()).then(() => {
+    if (typeof callback === 'function') {
+      callback()
+    }
+  })
+}
+
+function writeWebViewComponentFiles() {
+  writeWebViewComponentFile(require('./pdfJsContainer'), 'pdf.min.js', () => {
+    writeWebViewComponentFile(require('./pdfViewerContainer'), 'pdf_viewer.min.js', () => {
+      writeWebViewComponentFile(require('./pdfWorkerContainer'), 'pdf.worker.min.js', () => {
+        writeWebViewComponentFile(require('./reactDomContainer'), 'react-dom.production.min.js', () => {
+          writeWebViewComponentFile(require('./reactContainer'), 'react.production.min.js', null)
+        })
+      })
+    })
+  })
+}
 
 async function writeWebViewReaderFileAsync(
   data: string,
@@ -130,28 +141,24 @@ async function writeWebViewReaderFileAsync(
   withPinchZoom?: boolean,
   maximumPinchZoomScale?: number,
 ): Promise<void> {
-  await Promise.all(
-    scripts.map(async e => {
-      const bundleJsPath = `${cacheDirectory}${e}Container.js`
-      const bundleContainer = require(bundleJsPath);
-      const { exists, md5 } = await getInfoAsync(bundleJsPath, { md5: true })
-
-      if (!exists && bundleContainer.getBundleMd5() !== md5) {
-        await writeAsStringAsync(bundleJsPath, bundleContainer.getBundle())
-      }
-    })
-  )
-
-  await writeAsStringAsync(
-    htmlPath,
-    viewerHtml(
-      data,
-      customStyle,
-      withScroll,
-      withPinchZoom,
-      maximumPinchZoomScale,
-    ),
-  )
+  try {
+    writeWebViewComponentFiles();
+    const bundleJsPath = `${cacheDirectory}bundle.js`
+    const bundleContainer = require('./bundleContainer')
+    await writeAsStringAsync(bundleJsPath, bundleContainer.getBundle())
+    await writeAsStringAsync(
+        htmlPath,
+        viewerHtml(
+          data,
+          customStyle,
+          withScroll,
+          withPinchZoom,
+          maximumPinchZoomScale,
+        ),
+    )
+  } catch (e) {
+      console.log('ERRO', JSON.stringify(e))
+  }
 }
 
 async function writePDFAsync(base64: string) {
